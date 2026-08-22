@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const companyController_1 = require("../controllers/companyController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
+const router = (0, express_1.Router)();
+router.get('/settings', companyController_1.getCompanySettings);
+router.put('/settings', authMiddleware_1.authenticateToken, authMiddleware_1.requireAdmin, uploadMiddleware_1.upload.single('logo'), companyController_1.updateCompanySettings);
+exports.default = router;

@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const attendanceController_1 = require("../controllers/attendanceController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const router = (0, express_1.Router)();
+router.post('/check-in', authMiddleware_1.authenticateToken, attendanceController_1.checkIn);
+router.post('/check-out', authMiddleware_1.authenticateToken, attendanceController_1.checkOut);
+router.get('/today', authMiddleware_1.authenticateToken, attendanceController_1.getTodayAttendance);
+router.get('/history', authMiddleware_1.authenticateToken, attendanceController_1.getAttendanceHistory);
+exports.default = router;

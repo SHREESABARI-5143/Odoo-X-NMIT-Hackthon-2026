@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --dayflow-plum: #714B67;
+  --dayflow-plum-dark: #52364D;
+  --dayflow-orange: #F6A23A;
+  --dayflow-background: #F7F7F5;
+  --dayflow-surface: #FFFFFF;
+  --dayflow-border: #E7E4E1;
+  --dayflow-text: #252525;
+  --dayflow-muted: #6B6B6B;
+  --dayflow-success: #3FA66B;
+  --dayflow-warning: #E5A72A;
+  --dayflow-danger: #D85C5C;
+  --dayflow-info: #4F7CAC;
+}
+
+body {
+  background-color: var(--dayflow-background);
+  color: var(--dayflow-text);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1EFF0;
+}
+::-webkit-scrollbar-thumb {
+  background: #D5CFD3;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #714B67;
+}
+
+/* Flow Motion Micro-interactions */
+.flow-fade-enter {
+  animation: flowFadeEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes flowFadeEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.flow-scale-enter {
+  animation: flowScaleEnter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes flowScaleEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #E7E4E1 0%,
+    #F3F1EF 50%,
+    #E7E4E1 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

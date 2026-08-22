@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(uuid())
+  loginId        String   @unique
+  firstName      String
+  lastName       String
+  email          String   @unique
+  phone          String?
+  password       String
+  firstLogin     Boolean  @default(true)
+  role           String   @default("EMPLOYEE") // ADMIN_HR | EMPLOYEE
+  companyName    String   @default("Dayflow Technologies")
+  jobPosition    String?
+  department     String?
+  manager        String?
+  location       String?
+  avatarUrl      String?
+  dob            String?
+  address        String?
+  nationality    String?
+  personalEmail  String?
+  gender         String?
+  maritalStatus  String?
+  dateOfJoining  String?
+  bankAccount    String?
+  bankName       String?
+  ifsc           String?
+  pan            String?
+  uan            String?
+  employeeCode   String?
+  skills         String?  // JSON string e.g. ["React","Node.js"]
+  certifications String?  // JSON string array of objects
+  about          String?
+  interests      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Attendance {
+  id             String   @id @default(uuid())
+  employeeId     String
+  date           String   // YYYY-MM-DD
+  checkIn        String?  // HH:MM AM/PM
+  checkOut       String?  // HH:MM AM/PM
+  workHoursMins  Int      @default(0)
+  extraHoursMins Int      @default(0)
+  status         String   // PRESENT | HALF_DAY | ON_LEAVE | ABSENT
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model LeaveRequest {
+  id               String   @id @default(uuid())
+  employeeId       String
+  leaveType        String   // Paid | Sick | Unpaid
+  startDate        String   // YYYY-MM-DD
+  endDate          String   // YYYY-MM-DD
+  duration         Float
+  reason           String?
+  attachmentUrl    String?
+  status           String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectionComment String?
+  approvedById     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model LeaveAllocation {
+  id              String @id @default(uuid())
+  employeeId      String @unique
+  paidAllocated   Float  @default(15)
+  paidUsed        Float  @default(0)
+  sickAllocated   Float  @default(10)
+  sickUsed        Float  @default(0)
+  unpaidAllocated Float  @default(5)
+  unpaidUsed      Float  @default(0)
+  year            Int    @default(2026)
+}
+
+model SalaryConfig {
+  id                String   @id @default(uuid())
+  employeeId        String   @unique
+  monthlyWage       Float    @default(60000)
+  yearlyWage        Float    @default(720000)
+  workingDays       Int      @default(22)
+  breakHours        Float    @default(1.0)
+  basicSalary       Float    @default(30000)
+  hra               Float    @default(15000)
+  standardAllowance Float    @default(5000)
+  performanceBonus  Float    @default(5000)
+  lta               Float    @default(2500)
+  fixedAllowance    Float    @default(2500)
+  employeePf        Float    @default(1800)
+  employerPf        Float    @default(1800)
+  professionalTax   Float    @default(200)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  employeeId   String
+  name         String
+  type         String   // Aadhaar | PAN | Resume | Offer Letter | Joining Letter | Experience Certificate | Bank Document | Other
+  fileUrl      String
+  fileSize     Int      @default(0)
+  mimeType     String   @default("application/pdf")
+  uploadedById String
+  createdAt    DateTime @default(now())
+}
+
+model CompanySettings {
+  id                    String   @id @default(uuid())
+  companyName           String   @default("Dayflow Technologies")
+  companyLogo           String?
+  workingDays           Int      @default(5)
+  breakHours            Float    @default(1)
+  defaultPaidLeave      Int      @default(15)
+  defaultSickLeave      Int      @default(10)
+  defaultUnpaidLeave    Int      @default(5)
+  pfPercentage          Float    @default(12)
+  professionalTaxAmount Float    @default(200)
+  updatedAt             DateTime @updatedAt
+}
