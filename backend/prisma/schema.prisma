@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum Role {
+  ADMIN_HR
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum DocumentType {
+  AADHAAR
+  PAN
+  RESUME
+  OFFER_LETTER
+  JOINING_LETTER
+  EXPERIENCE_CERTIFICATE
+  BANK_DOCUMENT
+  OTHER
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id           Int      @id @default(autoincrement())
+  loginId      String   @unique @map("login_id")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(EMPLOYEE)
+  firstLogin   Boolean  @default(true) @map("first_login")
+  employeeId   Int      @unique @map("employee_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  employee  Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documents Document[] @relation("UploadedBy")
+
+  @@map("users")
+}
+
+model Employee {
+  id             Int            @id @default(autoincrement())
+  employeeCode   String         @unique @map("employee_code")
+  firstName      String         @map("first_name")
+  lastName       String         @map("last_name")
+  fullName       String         @map("full_name")
+  company        String
+  department     String?
+  jobPosition    String?        @map("job_position")
+  manager        String?
+  location       String?
+  email          String         @unique
+  phone          String?
+  profilePicture String?        @map("profile_picture")
+  joiningDate    DateTime       @map("joining_date")
+  status         EmployeeStatus @default(ACTIVE)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  user             User?
+  privateInfo      PrivateInfo?
+  securityInfo     SecurityInfo?
+  resume           Resume?
+  skills           EmployeeSkill[]
+  certifications   Certification[]
+  documents        Document[]
+  attendances      Attendance[]
+  leaveRequests    LeaveRequest[]
+  leaveAllocations LeaveAllocation[]
+  salary           Salary?
+  payrolls         Payroll[]
+
+  @@map("employees")
+}
+
+model PrivateInfo {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int      @unique @map("employee_id")
+  dateOfBirth   DateTime? @map("date_of_birth")
+  address       String?
+  nationality   String?
+  personalEmail String?  @map("personal_email")
+  gender        String?
+  maritalStatus String?  @map("marital_status")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("private_info")
+}
+
+model SecurityInfo {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int      @unique @map("employee_id")
+  bankDetails   String?  @map("bank_details")
+  accountNumber String?  @map("account_number")
+  bankName      String?  @map("bank_name")
+  ifsc          String?
+  pan           String?
+  uan           String?
+  employeeCode  String?  @map("employee_code")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("security_info")
+}
+
+model Resume {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int      @unique @map("employee_id")
+  about          String?
+  jobDescription String?  @map("job_description")
+  interests      String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
+}
+
+model Skill {
+  id        Int             @id @default(autoincrement())
+  name      String          @unique
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  employees EmployeeSkill[]
+
+  @@map("skills")
+}
+
+model EmployeeSkill {
+  employeeId Int @map("employee_id")
+  skillId    Int @map("skill_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  skill    Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, skillId])
+  @@map("employee_skills")
+}
+
+model Certification {
+  id                  Int       @id @default(autoincrement())
+  employeeId          Int       @map("employee_id")
+  name                String
+  issuingOrganization String?   @map("issuing_organization")
+  issueDate           DateTime? @map("issue_date")
+  expiryDate          DateTime? @map("expiry_date")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("certifications")
+}
+
+model Document {
+  id           Int          @id @default(autoincrement())
+  employeeId   Int          @map("employee_id")
+  documentName String       @map("document_name")
+  documentType DocumentType @map("document_type")
+  fileUrl      String       @map("file_url")
+  uploadedBy   Int          @map("uploaded_by")
+  uploadedAt   DateTime     @default(now()) @map("uploaded_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  uploader User     @relation("UploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("documents")
+}
+
+model Company {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  logoUrl            String?  @map("logo_url")
+  defaultWorkingDays Int      @default(5) @map("default_working_days")
+  defaultBreakHours  Float    @default(1.0) @map("default_break_hours")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("companies")
+}
+
+/// Tracks document deletions for audit compliance
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  entityType String   @map("entity_type")
+  entityId   Int      @map("entity_id")
+  performedBy Int     @map("performed_by")
+  details    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+/// Tracks the last-used serial number for login ID generation per year
+model LoginIdCounter {
+  id     Int  @id @default(autoincrement())
+  year   Int  @unique
+  serial Int  @default(0)
+
+  @@map("login_id_counters")
+}
+
+// ─── Core HR Modules ──────────────────────────────────────
+
+enum AttendanceStatus {
+  PRESENT
+  HALF_DAY
+  ABSENT
+}
+
+model Attendance {
+  id           Int              @id @default(autoincrement())
+  employeeId   Int              @map("employee_id")
+  date         String           // Format: YYYY-MM-DD
+  checkIn      String           // Format: HH:MM:SS
+  checkOut     String?          // Format: HH:MM:SS
+  workHours    Float?           @map("work_hours")
+  extraHours   Float?           @map("extra_hours")
+  status       AttendanceStatus @default(ABSENT)
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  employee     Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendances")
+}
+
+enum LeaveType {
+  PAID_TIME_OFF
+  SICK_LEAVE
+  UNPAID_LEAVE
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id              Int                @id @default(autoincrement())
+  employeeId      Int                @map("employee_id")
+  leaveType       LeaveType          @map("leave_type")
+  startDate       String             // Format: YYYY-MM-DD
+  endDate         String             // Format: YYYY-MM-DD
+  duration        Int                // In days
+  remarks         String?
+  status          LeaveRequestStatus @default(PENDING)
+  submittedOn     String             @map("submitted_on") // Format: YYYY-MM-DD
+  decisionComment String?            @map("decision_comment")
+  attachmentUrl   String?            @map("attachment_url")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("leave_requests")
+}
+
+model LeaveAllocation {
+  id         Int       @id @default(autoincrement())
+  employeeId Int       @map("employee_id")
+  leaveType  LeaveType @map("leave_type")
+  allocated  Int
+  used       Int       @default(0)
+  remaining  Int
+
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, leaveType])
+  @@map("leave_allocations")
+}
+
+model Salary {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int      @unique @map("employee_id")
+  monthlyWage        Float    @map("monthly_wage")
+  yearlyWage         Float    @map("yearly_wage")
+  workingDaysPerWeek Int      @default(5) @map("working_days_per_week")
+  breakHours         Float    @default(1.0) @map("break_hours")
+  basic              Float
+  hra                Float
+  allowance          Float
+  bonus              Float    @default(0)
+  fixedAllowance     Float    @default(0) @map("fixed_allowance")
+  pfEmployee         Float    @map("pf_employee")
+  pfEmployer         Float    @map("pf_employer")
+  professionalTax    Float    @map("professional_tax")
+  netSalary          Float    @map("net_salary")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("salaries")
+}
+
+enum PayrollStatus {
+  PENDING
+  PAID
+}
+
+model Payroll {
+  id             Int           @id @default(autoincrement())
+  employeeId     Int           @map("employee_id")
+  month          Int           // 1-12
+  year           Int
+  basic          Float
+  gross          Float
+  pf             Float
+  tax            Float
+  leaveDeduction Float         @default(0) @map("leave_deduction")
+  otherDeduction Float         @default(0) @map("other_deduction")
+  netSalary      Float         @map("net_salary")
+  payableSalary  Float         @map("payable_salary")
+  status         PayrollStatus @default(PENDING)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, month, year])
+  @@map("payrolls")
+}

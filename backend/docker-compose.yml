@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: dayflow-db
+    environment:
+      POSTGRES_USER: dayflow
+      POSTGRES_PASSWORD: dayflow_secret
+      POSTGRES_DB: dayflow_hrms
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dayflow -d dayflow_hrms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dayflow-api
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://dayflow:dayflow_secret@db:5432/dayflow_hrms?schema=public"
+      JWT_SECRET: "dayflow-hrms-jwt-secret-key-2026"
+      JWT_EXPIRES_IN: "24h"
+      PORT: "3000"
+      NODE_ENV: "production"
+      UPLOAD_DIR: "uploads"
+      MAX_FILE_SIZE_MB: "5"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/server.js"
+
+volumes:
+  pgdata:
+  uploads:
