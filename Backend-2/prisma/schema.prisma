@@ -1,0 +1,191 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// STUB: BE-1 Models (Minimal for standalone)
+// ==========================================
+model User {
+  id           String    @id @default(uuid())
+  loginId      String    @unique
+  email        String    @unique
+  passwordHash String
+  role         String    // ADMIN_HR | EMPLOYEE
+  firstLogin   Boolean   @default(true)
+  employeeId   String?   @unique
+  employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Employee {
+  id               String            @id @default(uuid())
+  employeeCode     String            @unique
+  firstName        String
+  lastName         String
+  fullName         String
+  company          String
+  department       String
+  jobPosition      String
+  manager          String?
+  location         String?
+  email            String            @unique
+  phone            String?
+  profilePicture   String?
+  joiningDate      DateTime
+  status           String            @default("ACTIVE")
+  user             User?
+  attendances      Attendance[]
+  leaveRequests    LeaveRequest[]
+  leaveAllocations LeaveAllocation[]
+  salary           Salary?
+  salaryComponents SalaryComponent[]
+  pfConfig         PFConfiguration?
+  taxConfig        TaxConfiguration?
+  skills           Skill[]
+  certifications   Certification[]
+  documents        Document[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Skill {
+  id         String   @id @default(uuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name       String
+  level      String
+  createdAt  DateTime @default(now())
+}
+
+model Certification {
+  id           String    @id @default(uuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name         String
+  organization String
+  issueDate    DateTime
+  expiryDate   DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  name         String
+  type         String
+  fileSize     String?
+  uploadedBy   String?
+  status       String   @default("APPROVED")
+  uploadedDate DateTime @default(now())
+  createdAt    DateTime @default(now())
+}
+
+// ==========================================
+// BE-2 Models (Owned by BE-2)
+// ==========================================
+model Attendance {
+  id         String    @id @default(uuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime
+  checkIn    DateTime?
+  checkOut   DateTime?
+  workHours  Float?
+  extraHours Float?
+  // status is NEVER stored as source of truth — always computed on read
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([employeeId, date])
+}
+
+model LeaveType {
+  id                 String            @id @default(uuid())
+  name               String            @unique
+  allocation         Int
+  requiresAttachment Boolean           @default(false)
+  paid               Boolean           @default(true)
+  leaveRequests      LeaveRequest[]
+  leaveAllocations   LeaveAllocation[]
+}
+
+model LeaveRequest {
+  id              String    @id @default(uuid())
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId     String
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  duration        Float
+  attachment      String?
+  remarks         String?   // employee's reason
+  status          String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  approvedBy      String?
+  approvedAt      DateTime?
+  decisionComment String?   // admin's comment — required on reject, optional on approve
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([employeeId, startDate, endDate])
+}
+
+model LeaveAllocation {
+  id            String    @id @default(uuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId   String
+  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id])
+  allocatedDays Int
+  usedDays      Float     @default(0)
+  remainingDays Float
+
+  @@unique([employeeId, leaveTypeId])
+}
+
+model Salary {
+  id                    String   @id @default(uuid())
+  employeeId            String   @unique
+  employee              Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  monthlyWage           Float
+  workingDaysPerWeek    Int      @default(5)
+  breakHours            Float    @default(1)
+  halfDayThresholdHours Float    @default(4)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model SalaryComponent {
+  id              String   @id @default(uuid())
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  componentName   String
+  calculationType String   // PERCENT_OF_WAGE | PERCENT_OF_BASIC | FIXED_REMAINDER
+  percentage      Float?
+  amount          Float?
+  salaryBase      String?  // e.g. "WAGE" or "BASIC"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([employeeId])
+}
+
+model PFConfiguration {
+  employeeId         String   @id
+  employee           Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeePercentage Float    @default(12)
+  employerPercentage Float    @default(12)
+}
+
+model TaxConfiguration {
+  employeeId      String   @id
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  professionalTax Float    @default(200)
+}
